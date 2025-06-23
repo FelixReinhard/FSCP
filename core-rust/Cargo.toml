@@ -1,0 +1,12 @@
+[package]
+name = "core-rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+server = {path = "crates/server"}
+client = {path = "crates/client"}
+shared = {path = "crates/shared"}
+
+[workspace]
+members = ["crates/*"]
