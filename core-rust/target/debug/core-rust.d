@@ -1,0 +1,1 @@
+/home/felix/FSCP-protocol/core-rust/target/debug/core-rust: /home/felix/FSCP-protocol/core-rust/crates/client/src/lib.rs /home/felix/FSCP-protocol/core-rust/crates/server/src/lib.rs /home/felix/FSCP-protocol/core-rust/crates/shared/src/datatypes/mod.rs /home/felix/FSCP-protocol/core-rust/crates/shared/src/lib.rs /home/felix/FSCP-protocol/core-rust/src/main.rs

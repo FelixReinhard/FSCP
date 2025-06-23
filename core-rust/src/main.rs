@@ -1,7 +1,13 @@
+use shared::datatypes::nodes::Node;
+
 extern crate client;
 extern crate server;
 extern crate shared;
 
 fn main() {
-    println!("Hello, world!");
+    let mut server = server::Server::new();
+
+    server.add_child(Node::new().name("Hello"));
+
+    server.serve();
 }

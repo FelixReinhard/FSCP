@@ -1,0 +1,4 @@
+var searchIndex = new Map(JSON.parse('[["client",{"t":"H","n":["add"],"q":[[0,"client"]],"i":"`","f":"{{bb}b}","D":"`","p":[[1,"u64"]],"r":[],"b":[],"c":"OjAAAAAAAAA=","e":"OjAAAAEAAAAAAAEAEAAAAAAAAQA=","P":[]}],["core_rust",{"t":"H","n":["main"],"q":[[0,"core_rust"]],"i":"`","f":"{{}b}","D":"`","p":[[1,"unit"]],"r":[],"b":[],"c":"OjAAAAAAAAA=","e":"OjAAAAEAAAAAAAEAEAAAAAAAAQA=","P":[]}],["server",{"t":"H","n":["sub"],"q":[[0,"server"]],"i":"`","f":"{{bb}b}","D":"`","p":[[1,"u64"]],"r":[],"b":[],"c":"OjAAAAAAAAA=","e":"OjAAAAEAAAAAAAEAEAAAAAAAAQA=","P":[]}],["shared",{"t":"","n":[],"q":[],"i":"","f":"","D":"`","p":[],"r":[],"b":[],"c":"OjAAAAAAAAA=","e":"OjAAAAEAAAAAAAAAEAAAAAAA","P":[]}]]'));
+if (typeof exports !== 'undefined') exports.searchIndex = searchIndex;
+else if (window.initSearch) window.initSearch(searchIndex);
+//{"start":39,"fragment_lengths":[172,179,173,134]}
