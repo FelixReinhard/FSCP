@@ -1,8 +1,9 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{
     datatypes::Data,
     errors::{self, Error},
+    events::{EventSubscriber, EventType},
     security::permissions::Permissions,
 };
 use uuid::Uuid;
@@ -16,6 +17,8 @@ pub struct Node {
     pub id: Uuid,
     pub children: Option<Vec<Node>>,
     pub permissions: Permissions,
+
+    subscribers: Option<Vec<Box<dyn EventSubscriber>>>,
 }
 
 impl Default for Node {
@@ -26,6 +29,7 @@ impl Default for Node {
             name: None,
             id: Uuid::new_v4(),
             permissions: Permissions::All,
+            subscribers: None,
         }
     }
 }
@@ -56,18 +60,39 @@ impl Node {
 
     /// Sets the nodes data. This includes its type.
     /// By default data is [Data::Folder]
+    ///
+    /// Should only be used when creating a node.
+    /// For runtime changes use [change_data].
     pub fn data(mut self, data: Data) -> Self {
         self.data = data;
         self
     }
 
+    pub fn change_data(&mut self, data: Data) {
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_data_changed(&self, &self.data);
+            }
+        }
+        self.data = data;
+    }
+
     /// Adds a single new node to the children list.
     pub fn add_child(&mut self, node: Node) -> &mut Self {
+        // trigger the event.
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_child_added(&self, &node);
+            }
+        }
+
+        // Add the node to the children list.
         if let Some(c) = &mut self.children {
             c.push(node);
         } else {
             self.children = Some(vec![node]);
         }
+
         self
     }
 
@@ -91,5 +116,33 @@ impl Node {
         } else {
             return 0;
         }
+    }
+
+    /// Subscribe to an event this node might emit.
+    ///
+    /// Possible Events:
+    /// - [DataChanged]
+    /// - [ChildAdded]
+    pub fn subscribe(&mut self, subscriber: impl EventSubscriber + 'static) {
+        if let Some(s) = &mut self.subscribers {
+            s.push(Box::new(subscriber));
+        } else {
+            self.subscribers = Some(vec![Box::new(subscriber)]);
+        }
+    }
+
+    /// Subscribe to an event this node and all its children might emit.
+    ///
+    /// Possible Events:
+    /// - [DataChanged]
+    /// - [ChildAdded]
+    pub fn subscribe_to_children(&mut self, subscriber: impl EventSubscriber + 'static + Clone) {
+        if let Some(ch) = &mut self.children {
+            for child in ch {
+                child.subscribe_to_children(subscriber.clone());
+            }
+        }
+
+        self.subscribe(subscriber);
     }
 }
