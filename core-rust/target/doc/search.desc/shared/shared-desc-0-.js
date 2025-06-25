@@ -1,1 +1,0 @@
-searchState.loadedDescShard("shared", 0, "")
