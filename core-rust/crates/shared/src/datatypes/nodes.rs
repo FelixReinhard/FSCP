@@ -1,10 +1,10 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    fmt::Display,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use crate::{
-    datatypes::Data,
-    errors::{self, Error},
-    events::{EventSubscriber, EventType},
-    security::permissions::Permissions,
+    datatypes::Data, errors::Error, events::EventSubscriber, security::permissions::Permissions,
 };
 use uuid::Uuid;
 
@@ -68,13 +68,43 @@ impl Node {
         self
     }
 
+    /// Sets the nodes id.
+    /// This is only needed when reconstruing a tree.
+    /// Normally, a new id is generated when adding a node.
+    pub fn id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
+    /// Changes the data of this node.
+    /// Should be used at runtime after the tree has been configured. When configuring use [Node::data]
+    ///
+    /// Triggers the [DataChanged] event
     pub fn change_data(&mut self, data: Data) {
+        let old_data = self.data.clone();
+        self.data = data;
+
         if let Some(subs) = &self.subscribers {
             for s in subs {
-                s.handle_data_changed(&self, &self.data);
+                s.handle_data_changed(&self, &old_data);
             }
         }
-        self.data = data;
+    }
+
+    /// Changes the name of this node.
+    /// Should be used at runtime after the tree has been configured. When configuring use
+    /// [Node::name]
+    ///
+    /// Triggers the [NameChanged] event
+    pub fn change_name(&mut self, name: impl Display) {
+        let old_name = self.name.clone();
+        self.name = Some(name.to_string());
+
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_name_changed(&self, &old_name);
+            }
+        }
     }
 
     /// Adds a single new node to the children list.
@@ -99,13 +129,30 @@ impl Node {
     /// Get the child by index.
     /// Returns a mutable reference to the child if present.
     /// Otherwise returns an Error
-    pub fn get_child(&mut self, index: usize) -> Result<&mut Node, errors::Error> {
+    pub fn get_child(&mut self, index: usize) -> Result<&mut Node, Error> {
         if let Some(c) = &mut self.children {
             if let Some(child) = c.get_mut(index) {
                 return Ok(child);
             }
         }
         Err(Error::SimpleError("This child does not exist"))
+    }
+
+    /// Traverses the tree to find a node with the given id.
+    pub fn find_node_mut(&mut self, id: &Uuid) -> Option<&mut Node> {
+        if self.id == *id {
+            return Some(self);
+        }
+
+        if let Some(children) = &mut self.children {
+            for child in children {
+                if let Some(node) = child.find_node_mut(id) {
+                    return Some(node);
+                }
+            }
+        }
+
+        None
     }
 
     /// Returns the amount of children this node has.
@@ -144,5 +191,30 @@ impl Node {
         }
 
         self.subscribe(subscriber);
+    }
+
+    /// Hashes the tree using
+    /// - id
+    /// - name
+    /// - data
+    /// - children
+    pub fn get_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl Hash for Node {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.name.hash(state);
+        self.data.hash(state);
+
+        if let Some(children) = &self.children {
+            for child in children {
+                child.hash(state);
+            }
+        }
     }
 }

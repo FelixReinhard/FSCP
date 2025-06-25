@@ -12,7 +12,7 @@ fn main() {
 
     server.add_child(Node::new().name("Hello"));
     let mut n = Node::new();
-    n.subscribe_to_children(DataChanged::new(|node, data| {
+    n.subscribe_to_children(DataChanged::new(|_, _| {
         println!("Hello");
     }));
     n.change_data(Data::UInt32(32));

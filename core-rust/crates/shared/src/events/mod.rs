@@ -9,10 +9,13 @@ pub enum EventType {
 
 /// This trait implements the events.
 pub trait EventSubscriber {
+    /// Is called when the data of a node changes in any way.
     fn handle_data_changed(&self, node: &Node, previous_data: &Data) {}
     /// This is called before the node is added. Therefore, the children of [node] do not contain
     /// [new_child].
     fn handle_child_added(&self, node: &Node, new_child: &Node) {}
+
+    fn handle_name_changed(&self, node: &Node, previous_name: &Option<String>) {}
 }
 
 /// This macro creates the framework to easily create new event types
@@ -64,5 +67,13 @@ make_event_subscriber!(
     Fn(&Node, &Node),
     fn handle_child_added(&self, node: &Node, new_child: &Node) {
         (self.handler)(node, new_child)
+    }
+);
+
+make_event_subscriber!(
+    NameChanged,
+    Fn(&Node, &Option<String>),
+    fn handle_name_changed(&self, node: &Node, previous_name: &Option<String>) {
+        (self.handler)(node, previous_name)
     }
 );
