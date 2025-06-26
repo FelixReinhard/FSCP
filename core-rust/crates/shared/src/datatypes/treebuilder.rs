@@ -14,6 +14,7 @@ use crate::{
 /// Defines possible changes that can be done to the tree.
 pub enum TreeChange {
     NodeAdded(Data, Option<String>, Uuid, Uuid), // Data of added node, name of node Id of parent.
+    NodeRemoved(Uuid),
     NodeChangedName(Uuid, String),
     NodeChangedData(Uuid, Data),
 }
@@ -27,11 +28,27 @@ impl TreeBuilder {
             TreeChange::NodeAdded(data, Some(name), id, parent) => {
                 if let Some(parent) = root.find_node_mut(&parent) {
                     parent.add_child(Node::new().name(name).data(data).id(id));
+                } else {
+                    return Err(Error::SimpleErrorStr(format!(
+                        "TreeBuilder: Cannot find node with id={:?}",
+                        parent
+                    )));
                 }
             }
             TreeChange::NodeAdded(data, None, id, parent) => {
                 if let Some(parent) = root.find_node_mut(&parent) {
                     parent.add_child(Node::new().data(data).id(id));
+                } else {
+                    return Err(Error::SimpleErrorStr(format!(
+                        "TreeBuilder: Cannot find node with id={:?}",
+                        parent
+                    )));
+                }
+            }
+
+            TreeChange::NodeRemoved(id) => {
+                if !root.remove_child(&id) {
+                    return Err(Error::SimpleError("No node to delete"));
                 }
             }
 
@@ -39,6 +56,11 @@ impl TreeBuilder {
             TreeChange::NodeChangedData(id, data) => {
                 if let Some(node) = root.find_node_mut(&id) {
                     node.change_data(data);
+                } else {
+                    return Err(Error::SimpleErrorStr(format!(
+                        "TreeBuilder: Cannot find node with id={:?}",
+                        id
+                    )));
                 }
             }
 
@@ -46,6 +68,11 @@ impl TreeBuilder {
             TreeChange::NodeChangedName(id, name) => {
                 if let Some(node) = root.find_node_mut(&id) {
                     node.change_name(name);
+                } else {
+                    return Err(Error::SimpleErrorStr(format!(
+                        "TreeBuilder: Cannot find node with id={:?}",
+                        id
+                    )));
                 }
             }
         };
@@ -103,6 +130,44 @@ pub mod test {
             TreeChange::NodeChangedData(id2, Data::Bool(true)),
         )
         .unwrap();
+
+        assert_eq!(tree.get_hash(), tree2.get_hash());
+    }
+    #[test]
+    fn simple2() {
+        let mut tree = make_default_tree();
+        let mut tree2 = make_default_tree();
+
+        for i in 0..100 {
+            tree.add_child(Node::new().name(format!("node {i}")).id(Uuid::from_u128(i)));
+        }
+
+        let root_id = tree2.id.clone();
+        for i in 0..100 {
+            TreeBuilder::change(
+                &mut tree2,
+                TreeChange::NodeAdded(
+                    Data::Folder,
+                    Some(format!("node {i}")),
+                    Uuid::from_u128(i),
+                    root_id.clone(),
+                ),
+            )
+            .unwrap();
+        }
+
+        assert_eq!(tree.get_hash(), tree2.get_hash());
+    }
+
+    #[test]
+    fn remove() {
+        let mut tree = make_default_tree();
+        let mut tree2 = make_default_tree();
+
+        let right_id = tree.get_child(0).unwrap().id.clone();
+        tree.remove_child(&right_id);
+
+        TreeBuilder::change(&mut tree2, TreeChange::NodeRemoved(right_id)).unwrap();
 
         assert_eq!(tree.get_hash(), tree2.get_hash());
     }

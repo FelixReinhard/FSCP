@@ -6,7 +6,7 @@ pub mod treebuilder;
 #[derive(Clone)]
 pub enum Data {
     Folder,
-    Button,
+    Button(u64), // how often pressed
     Float32(f32),
     Float64(f64),
     Int32(i32),
@@ -23,7 +23,10 @@ impl Hash for Data {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             Self::Folder => state.write_u8(0),
-            Self::Button => state.write_u8(1),
+            Self::Button(n) => {
+                state.write_u8(1);
+                state.write_u64(*n);
+            }
             Self::Float32(v) => {
                 state.write_u8(2);
                 state.write_u32(v.to_bits());

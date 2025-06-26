@@ -4,6 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::{Arc, Condvar, Mutex},
     thread,
+    time::Duration,
 };
 
 use rsa::pkcs8::der::Writer;
@@ -72,13 +73,42 @@ fn handle_tcp_stream(manager: Arc<Mutex<TcpManager>>, mut stream: TcpStream) {
         lock.running_threads_amount += 1;
     }
 
+    // Handle the allowed stream as there are still slots open.
+    handle_allowed_stream(stream);
+
     // Done with the handling, so decrement count
     {
         let mut lock = if let Ok(l) = manager.lock() {
             l
         } else {
+            // This case might be really bad TODO TODO TODO WARNING AHHHHHH HELP ME LA POLIZIA LA
+            // SIGMA SIGMA MAN OUHHHHHHHHHHHHHHHHHHH IIII
             return;
         };
         lock.running_threads_amount -= 1;
     }
+}
+/// The stream is allowed to happen so handle it.
+fn handle_allowed_stream(mut stream: TcpStream) -> Result<(), Error> {
+    match stream.set_read_timeout(Some(Duration::from_secs(10))) {
+        Ok(()) => {}
+        Err(error) => {
+            drop(stream);
+            return Err(Error::SimpleErrorStr(format!(
+                "Tcp: When setting the read timeout somethign went bad: {:?}\n Closing connection.",
+                error
+            )));
+        }
+    };
+    // First we need to accept the ClientHello
+    // sizeof(ClientHello) =
+    //
+    //
+    stream = client_hello(stream)?;
+    Ok(())
+}
+
+// Do the client hello by recieving the message and acting accordingly.
+fn client_hello(mut stream: TcpStream) -> Result<TcpStream, Error> {
+    todo!()
 }

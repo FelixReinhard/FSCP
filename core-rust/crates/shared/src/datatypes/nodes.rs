@@ -85,8 +85,14 @@ impl Node {
         self.data = data;
 
         if let Some(subs) = &self.subscribers {
-            for s in subs {
-                s.handle_data_changed(&self, &old_data);
+            if let Data::Button(_) = self.data {
+                for s in subs {
+                    s.handle_button_press(&self);
+                }
+            } else {
+                for s in subs {
+                    s.handle_data_changed(&self, &old_data);
+                }
             }
         }
     }
@@ -155,6 +161,33 @@ impl Node {
         None
     }
 
+    /// Deletes the node with id in the tree.
+    /// Returns [true] if this was successfull, [false] otherwise.
+    ///
+    /// It is impossible to delete the root.
+    pub fn remove_child(&mut self, id: &Uuid) -> bool {
+        if let Some(children) = &mut self.children {
+            let old_size = children.len();
+            children.retain(|elem| {
+                if elem.id == *id {
+                    // Found => Should be deleted
+                    //
+                    // trigger deleted event.
+                    elem.trigger_deleted();
+                    false
+                } else {
+                    false
+                }
+            });
+
+            // difference should never be greater then one as Uuid ids are unique.
+            if old_size != children.len() {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Returns the amount of children this node has.
     /// If no children are present returns 0.
     pub fn get_children_count(&self) -> usize {
@@ -165,11 +198,28 @@ impl Node {
         }
     }
 
-    /// Subscribe to an event this node might emit.
+    /// Subscribe to this node might emit.
     ///
     /// Possible Events:
     /// - [DataChanged]
     /// - [ChildAdded]
+    /// - [ChildRemoved]
+    /// - [NameChanged]
+    /// - [ButtonPressed]
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use shared::datatypes::nodes::Node;
+    /// use shared::events::DataChanged;
+    ///
+    /// let mut node = Node::new();
+    ///
+    /// node.subscribe(DataChanged::new(|_, _| {
+    ///    println!("Hello");
+    /// }
+    /// ));
+    /// ```
     pub fn subscribe(&mut self, subscriber: impl EventSubscriber + 'static) {
         if let Some(s) = &mut self.subscribers {
             s.push(Box::new(subscriber));
@@ -178,7 +228,7 @@ impl Node {
         }
     }
 
-    /// Subscribe to an event this node and all its children might emit.
+    /// Subscribe to this node and all its children might emit.
     ///
     /// Possible Events:
     /// - [DataChanged]
@@ -202,6 +252,40 @@ impl Node {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
         hasher.finish()
+    }
+
+    /// Press this node. Only for [Data::Button].
+    /// Should **not** be used on the *Server*, only on the *Client*
+    ///
+    /// No [ChangeData] event is triggered, but a [ButtonPress]
+    pub fn press(&mut self) -> Result<(), Error> {
+        if let Data::Button(n) = self.data {
+            // Increase amount of pressed and use [change_data] to also trigger the events.
+
+            self.change_data(Data::Button(n + 1));
+            Ok(())
+        } else {
+            Err(Error::SimpleErrorStr(format!(
+                "Press: Node is not a button ({:?})",
+                self.id
+            )))
+        }
+    }
+
+    /// Used internally to trigger the deletion event.
+    fn trigger_deleted(&self) {
+        // First trigger self
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_child_removed(&self);
+            }
+        }
+        // then trigger children
+        if let Some(children) = &self.children {
+            for c in children {
+                c.trigger_deleted();
+            }
+        }
     }
 }
 

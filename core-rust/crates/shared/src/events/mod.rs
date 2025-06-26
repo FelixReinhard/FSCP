@@ -1,13 +1,10 @@
 use crate::datatypes::{Data, nodes::Node};
 
-pub enum EventType {
-    DataChanged,
-    ChildAdded,
-    ChildRemoved,
-    Deleted,
-}
-
 /// This trait implements the events.
+/// A event can be subscribed to, where other clients and even the server don't get a notification
+/// about which events where subscribed to.
+///
+///
 pub trait EventSubscriber {
     /// Is called when the data of a node changes in any way.
     fn handle_data_changed(&self, node: &Node, previous_data: &Data) {}
@@ -15,7 +12,15 @@ pub trait EventSubscriber {
     /// [new_child].
     fn handle_child_added(&self, node: &Node, new_child: &Node) {}
 
+    fn handle_child_removed(&self, node: &Node) {}
+
     fn handle_name_changed(&self, node: &Node, previous_name: &Option<String>) {}
+
+    /// Special event that is triggered when a node is the [Data::Button] and is pressed.
+    ///
+    /// This event is transmitted, only from client to server.
+    /// It should be used to let the client trigger changes or behaviour.
+    fn handle_button_press(&self, node: &Node) {}
 }
 
 /// This macro creates the framework to easily create new event types
@@ -75,5 +80,21 @@ make_event_subscriber!(
     Fn(&Node, &Option<String>),
     fn handle_name_changed(&self, node: &Node, previous_name: &Option<String>) {
         (self.handler)(node, previous_name)
+    }
+);
+
+make_event_subscriber!(
+    ChildRemoved,
+    Fn(&Node),
+    fn handle_child_removed(&self, node: &Node) {
+        (self.handler)(node)
+    }
+);
+
+make_event_subscriber!(
+    ButtonPressed,
+    Fn(&Node),
+    fn handle_button_press(&self, node: &Node) {
+        (self.handler)(node)
     }
 );
