@@ -52,6 +52,7 @@ checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 name = "core-rust"
 version = "0.1.0"
 dependencies = [
+ "byteorder",
  "client",
  "server",
  "shared",
@@ -322,6 +323,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
+ "libc",
  "rand_chacha",
  "rand_core",
 ]
@@ -417,7 +419,10 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
+ "byteorder",
+ "rand",
  "rsa",
+ "serde",
  "uuid",
  "x25519-dalek",
 ]
@@ -491,6 +496,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 

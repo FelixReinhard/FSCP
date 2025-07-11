@@ -9,13 +9,13 @@ use crate::{
 use uuid::Uuid;
 
 /// The base type for a node.
-///
 pub struct Node {
     pub data: Data,
 
     pub name: Option<String>,
     pub id: Uuid,
     pub children: Option<Vec<Node>>,
+    pub parent_id: Option<Uuid>,
     pub permissions: Permissions,
 
     subscribers: Option<Vec<Box<dyn EventSubscriber>>>,
@@ -28,7 +28,8 @@ impl Default for Node {
             children: None,
             name: None,
             id: Uuid::new_v4(),
-            permissions: Permissions::All,
+            parent_id: None,
+            permissions: Permissions::Public,
             subscribers: None,
         }
     }
@@ -53,7 +54,10 @@ impl Node {
     }
 
     /// Sets all children.
-    pub fn children(mut self, children: Vec<Node>) -> Self {
+    pub fn children(mut self, mut children: Vec<Node>) -> Self {
+        for c in children.iter_mut() {
+            c.parent_id = Some(self.id.clone());
+        }
         self.children = Some(children);
         self
     }
@@ -84,17 +88,7 @@ impl Node {
         let old_data = self.data.clone();
         self.data = data;
 
-        if let Some(subs) = &self.subscribers {
-            if let Data::Button(_) = self.data {
-                for s in subs {
-                    s.handle_button_press(&self);
-                }
-            } else {
-                for s in subs {
-                    s.handle_data_changed(&self, &old_data);
-                }
-            }
-        }
+        self.trigger_data_changed(&old_data);
     }
 
     /// Changes the name of this node.
@@ -113,14 +107,17 @@ impl Node {
         }
     }
 
+    /// Changes the permissions of this node
+    pub fn change_permissions(&mut self, permissions: Permissions) {
+        self.permissions = permissions;
+        self.trigger_permissions_changed();
+    }
+
     /// Adds a single new node to the children list.
-    pub fn add_child(&mut self, node: Node) -> &mut Self {
+    pub fn add_child(&mut self, mut node: Node) -> &mut Self {
         // trigger the event.
-        if let Some(subs) = &self.subscribers {
-            for s in subs {
-                s.handle_child_added(&self, &node);
-            }
-        }
+        self.trigger_child_added(&node);
+        node.parent_id = Some(self.id.clone());
 
         // Add the node to the children list.
         if let Some(c) = &mut self.children {
@@ -272,7 +269,12 @@ impl Node {
         }
     }
 
-    /// Used internally to trigger the deletion event.
+    /// Checks if a user with the [permissions] can acces this node.
+    pub fn can_acces(&self, permissions: &Permissions) -> bool {
+        self.permissions.can_be_accessed(permissions)
+    }
+
+    // Used internally to trigger the deletion event.
     fn trigger_deleted(&self) {
         // First trigger self
         if let Some(subs) = &self.subscribers {
@@ -284,6 +286,36 @@ impl Node {
         if let Some(children) = &self.children {
             for c in children {
                 c.trigger_deleted();
+            }
+        }
+    }
+
+    fn trigger_child_added(&self, node: &Node) {
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_child_added(&self, node);
+            }
+        }
+    }
+
+    fn trigger_permissions_changed(&self) {
+        if let Some(subs) = &self.subscribers {
+            for s in subs {
+                s.handle_permissions_changed(&self);
+            }
+        }
+    }
+
+    fn trigger_data_changed(&self, old_data: &Data) {
+        if let Some(subs) = &self.subscribers {
+            if let Data::Button(_) = self.data {
+                for s in subs {
+                    s.handle_button_press(&self);
+                }
+            } else {
+                for s in subs {
+                    s.handle_data_changed(&self, &old_data);
+                }
             }
         }
     }

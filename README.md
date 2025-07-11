@@ -2,6 +2,19 @@
 
 ## Specifications
 
+### Server - Client exchange 
+A server starts and listens. Then a client sends a `ClientHello` which includes a version number and optionally a public key.
+The Server then accepts this client. 
+
+- If a public key (or certificate) is present, then an encrypted nonce is sent to the client who needs to respond with the decrypted nonce immidiatly after this.
+On success the corresponding permissions are granted.
+- Otherwise this step is skipped.
+
+A `ServerAccept` is sent, which contains a session number and expiration time. After expiration a `ServerRefreshPermissions` is sent.
+
+This is then followed by a stream of messages from the server to build the Tree. In between the client can always
+send a `ClientHash` or `ClientTrigger` message. If a `ClientAddPermissions` is sent the procedure from above is done again. The old certificate does not expire.
+
 
 ## (DEV) Brainstorm
 - TCP basis 
@@ -20,3 +33,6 @@
   emits Event when started and when finished.
 
 - Subscribe to groups. Node is part of any number of groups and can be Subscribed when changed.
+
+
+

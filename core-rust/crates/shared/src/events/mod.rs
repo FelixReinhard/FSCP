@@ -7,20 +7,22 @@ use crate::datatypes::{Data, nodes::Node};
 ///
 pub trait EventSubscriber {
     /// Is called when the data of a node changes in any way.
-    fn handle_data_changed(&self, node: &Node, previous_data: &Data) {}
+    fn handle_data_changed(&self, _node: &Node, _previous_data: &Data) {}
     /// This is called before the node is added. Therefore, the children of [node] do not contain
     /// [new_child].
-    fn handle_child_added(&self, node: &Node, new_child: &Node) {}
+    fn handle_child_added(&self, _node: &Node, _new_child: &Node) {}
 
-    fn handle_child_removed(&self, node: &Node) {}
+    fn handle_child_removed(&self, _node: &Node) {}
 
-    fn handle_name_changed(&self, node: &Node, previous_name: &Option<String>) {}
+    fn handle_name_changed(&self, _node: &Node, _previous_name: &Option<String>) {}
+
+    fn handle_permissions_changed(&self, _node: &Node) {}
 
     /// Special event that is triggered when a node is the [Data::Button] and is pressed.
     ///
     /// This event is transmitted, only from client to server.
     /// It should be used to let the client trigger changes or behaviour.
-    fn handle_button_press(&self, node: &Node) {}
+    fn handle_button_press(&self, _node: &Node) {}
 }
 
 /// This macro creates the framework to easily create new event types
@@ -95,6 +97,14 @@ make_event_subscriber!(
     ButtonPressed,
     Fn(&Node),
     fn handle_button_press(&self, node: &Node) {
+        (self.handler)(node)
+    }
+);
+
+make_event_subscriber!(
+    PermissionsChanged,
+    Fn(&Node),
+    fn handle_permissions_changed(&self, node: &Node) {
         (self.handler)(node)
     }
 );

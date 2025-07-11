@@ -1,27 +1,64 @@
 // This file contains the code for Messages that are send between client and server.
 
-use rsa::{RsaPublicKey, traits::PublicKeyParts};
+use rsa::{BigUint, RsaPublicKey};
 use uuid::Uuid;
 
-use crate::{config, datatypes::treebuilder::TreeChange};
+use crate::{datatypes::treebuilder::TreeChange, errors::Error};
 
+use serde::{Deserialize, Serialize};
+
+// All messages always
+#[derive(Serialize, Deserialize)]
 pub enum Message {
-    ClientHello(u8, Option<RsaPublicKey>), // version, optional public key. Functions as the
-    // clients certificate.
-    ServerHello([u8; 32], [u8; 256]), // DH message, nonce encrypted with public key from previous message. To
-    // be decrypted by client and encrypted with generated shared key and sent back.
-    // This ensures the client is the owner of certificate and has the shared aes key.
-    ClientAuth([u8; 32], [u8; 256]), // DH message, nonce decrypted and encrypted with shared
-    // session key.
+    ClientHello(u8, Option<(Vec<u8>, Vec<u8>)>), // version, optional public key. Functions as the
+    // clients certificate. 256 len of n and 3 for e
+    ServerAuth(Vec<u8>),    // nonce encrypted with public key.
+    ClientAuth(Vec<u8>),    // nonce decrypted
+    ServerAccept(u64, u16), // Is sent after authentication to start the loop. session number
+    // (random), session validaty time in seconds
+    ServerRefreshPermissions,
     ServerChange(TreeChange), // This message is sent to communicate changes in the tree.
     ServerLog(String),        // Is send to inform client of succesffull button press or any erros.
     ClientHash(u64), // Sends the hash of the tree. If Server sees difference check saved hashes
     // and resend.
     ClientTrigger(Uuid), // Tries to trigger a Button node.
+    ClientAddPermissions(Vec<u8>, Vec<u8>),
 }
 
+/// Helper Function to extract the RsaPublicKey from a message.
+/// Returns an error if the [ClientHello] has no certificate or is a different enum kind.
+pub fn client_hello_rsa_key(message: &Message) -> Result<RsaPublicKey, crate::errors::Error> {
+    match message {
+        Message::ClientHello(_, Some((n, e))) => {
+            let n = BigUint::from_bytes_le(&n);
+            let e = BigUint::from_bytes_le(&e);
+
+            let key = match RsaPublicKey::new(n.clone(), e.clone()) {
+                Ok(key) => key,
+                Err(err) => {
+                    return Err(Error::SimpleErrorStr(format!(
+                        "Deserialize ClientHello: Couldnt create RsaPublicKey from {}(n) an {}(e) with {:?}",
+                        n, e, err
+                    )));
+                }
+            };
+            Ok(key)
+        }
+        _ => Err(Error::SimpleError("Client Hello has not certificate")),
+    }
+}
+
+/// Helper Function to check if a message is a [ClientHello] with a certificate.
+pub fn client_hello_has_rsa_key(message: &Message) -> bool {
+    match message {
+        Message::ClientHello(_, Some((_, _))) => true,
+        _ => false,
+    }
+}
+
+/// Implements serialiazation for the client hello world.
 mod client_hello {
-    use std::io::{BufRead, BufReader, Cursor, Read};
+    use std::io::{BufReader, Cursor, Read};
 
     use rand::thread_rng;
     use rsa::traits::PublicKeyParts;
@@ -52,8 +89,9 @@ mod client_hello {
 
         let mut n = certificate.n().to_bytes_le();
         let mut e = certificate.e().to_bytes_le();
-
-        assert_eq!(*certificate.n(), BigUint::from_bytes_le(&n));
+        //
+        // let mut n = BigUint::from(42u8).to_bytes_le();
+        // let mut e = BigUint::from(6u8).to_bytes_le();
 
         assert!(n.len() <= 256);
         assert!(e.len() <= 3);
@@ -70,7 +108,7 @@ mod client_hello {
         buf
     }
 
-    fn serialize_client_hello_without_cert(version: u8) -> [u8; 1] {
+    fn serialize_without_cert(version: u8) -> [u8; 1] {
         [version << 1]
     }
 
@@ -106,6 +144,7 @@ mod client_hello {
         if has_cert > 0 {
             // size of n component of RsaPublicKey
             // Is a u16
+
             let n_size_1 = reader_error(
                 reader.read_u8(),
                 "Deserialize ClientHello: cannot parse size of n.",
@@ -136,7 +175,6 @@ mod client_hello {
             )?;
 
             let n = BigUint::from_bytes_le(&n_bytes);
-
             let e = BigUint::from_bytes_le(&e_bytes);
 
             let key = match RsaPublicKey::new(n.clone(), e.clone()) {
@@ -156,7 +194,7 @@ mod client_hello {
     }
 
     #[test]
-    fn test_simple() {
+    fn test() {
         let n = 55u32; // modulus
         let e = 3u32; // public exponent
         let d = 27u32; // private exponent
@@ -170,9 +208,6 @@ mod client_hello {
         let p = BigUint::from(5u32);
         let q = BigUint::from(11u32);
 
-        // Construct private key
-        let private_key = RsaPrivateKey::from_components(n.clone(), e.clone(), d, vec![p, q]);
-
         // Construct public key
         let public_key = RsaPublicKey::new(n, e).unwrap();
 
@@ -185,13 +220,12 @@ mod client_hello {
         assert_eq!(version, 1);
         assert_eq!(public_key, public_key2.unwrap());
     }
+
     #[test]
-    fn test() {
+    fn test2() {
         let mut rng = thread_rng();
         let private_key = RsaPrivateKey::new(&mut rng, config::RSA_KEY_SIZE).unwrap();
-
-        // Construct public key
-        let public_key = RsaPublicKey::from(&private_key);
+        let public_key = RsaPublicKey::from(private_key);
 
         let serialized = serialize(1, public_key.clone());
         assert_eq!(serialized[0], 0b11);

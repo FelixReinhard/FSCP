@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-uuid = {version = "1.17.0", features = ["v4"]}
+uuid = {version = "1.17.0", features = ["v4", "serde"]}
 x25519-dalek = "2"
 rsa = "0.9.8"
 byteorder = "1.5"
 rand = "0.8"
+serde = {version = "1.0.140", features = ["derive"]}

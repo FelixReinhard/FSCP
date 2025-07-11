@@ -1,9 +1,11 @@
 use std::hash::Hash;
 
+use serde::{Deserialize, Serialize};
+
 pub mod nodes;
 pub mod treebuilder;
 /// All possible Datatypes
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Data {
     Folder,
     Button(u64), // how often pressed

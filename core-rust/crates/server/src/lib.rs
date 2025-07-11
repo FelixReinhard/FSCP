@@ -7,7 +7,7 @@ pub struct Server {
 impl Server {
     pub fn new() -> Self {
         Self {
-            root: Node::new().name("root").permissions(Permissions::All),
+            root: Node::new().name("root").permissions(Permissions::Public),
         }
     }
 

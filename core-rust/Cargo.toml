@@ -8,6 +8,7 @@ server = {path = "crates/server"}
 client = {path = "crates/client"}
 shared = {path = "crates/shared"}
 uuid = "1.17.0"
+byteorder = "1.5.0"
 
 [workspace]
 members = ["crates/*"]
