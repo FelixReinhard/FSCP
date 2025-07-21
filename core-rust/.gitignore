@@ -37,3 +37,6 @@ node_modules/
 # Windows
 Thumbs.db
 ehthumbs.db
+
+# No certificates lol
+*.pem

@@ -21,6 +21,22 @@ pub struct Node {
     subscribers: Option<Vec<Box<dyn EventSubscriber>>>,
 }
 
+impl Clone for Node {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+            name: self.name.clone(),
+            id: self.id.clone(),
+            children: self.children.clone(),
+            parent_id: self.parent_id.clone(),
+            permissions: self.permissions.clone(),
+
+            subscribers: None, // Cloning does not take the subscribers, as they should be local to
+                               // the threads
+        }
+    }
+}
+
 impl Default for Node {
     fn default() -> Self {
         Self {

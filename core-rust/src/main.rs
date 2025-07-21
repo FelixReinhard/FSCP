@@ -21,6 +21,4 @@ fn main() {
         println!("Hello {num2}");
     }));
     n.change_data(Data::UInt32(32));
-
-    server.serve();
 }

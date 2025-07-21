@@ -7,8 +7,6 @@ use std::{
     time::Duration,
 };
 
-use rsa::pkcs8::der::Writer;
-
 use crate::{config, errors::Error};
 
 /// Contains code that makes remote calls possible.
