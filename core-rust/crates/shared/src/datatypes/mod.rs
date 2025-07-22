@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub mod nodes;
 pub mod treebuilder;
 /// All possible Datatypes
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Data {
     Folder,
     Button(u64), // how often pressed

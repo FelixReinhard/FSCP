@@ -8,7 +8,7 @@ use crate::{datatypes::treebuilder::TreeChange, errors::Error};
 use serde::{Deserialize, Serialize};
 
 // All messages always
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
     ClientHello(u8, Option<(Vec<u8>, Vec<u8>)>), // version, optional public key. Functions as the
     // clients certificate. 256 len of n and 3 for e
