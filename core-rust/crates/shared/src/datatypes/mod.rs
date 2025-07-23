@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use std::{fmt::Display, hash::Hash};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +19,64 @@ pub enum Data {
     Bool(bool),
     Tuple(usize, Box<[Data]>),
     List(Box<Vec<Data>>),
+}
+
+impl Display for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Folder => {
+                write!(f, "folder")
+            }
+            Self::Button(i) => {
+                write!(f, "button({i})")
+            }
+            Self::Float32(i) => {
+                write!(f, "{i}")
+            }
+            Self::Float64(i) => {
+                write!(f, "{i}")
+            }
+            Self::Int32(i) => {
+                write!(f, "{i}")
+            }
+            Self::Int64(i) => {
+                write!(f, "{i}")
+            }
+            Self::UInt32(i) => {
+                write!(f, "{i}")
+            }
+            Self::UInt64(i) => {
+                write!(f, "{i}")
+            }
+            Self::String(s) => {
+                write!(f, "{s}")
+            }
+            Self::Bool(b) => {
+                write!(f, "{}", if *b { "true" } else { "false" })
+            }
+            Self::Tuple(_, tuple) => {
+                write!(
+                    f,
+                    "{}",
+                    tuple
+                        .iter()
+                        .map(|elem| format!("{elem}"))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            }
+            Self::List(ls) => {
+                write!(
+                    f,
+                    "{}",
+                    ls.iter()
+                        .map(|elem| format!("{elem}"))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            }
+        }
+    }
 }
 
 impl Hash for Data {

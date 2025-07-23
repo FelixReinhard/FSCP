@@ -15,7 +15,8 @@ use crate::{
 /// Defines possible changes that can be done to the tree.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum TreeChange {
-    NodeAdded(Data, Option<String>, Uuid, Uuid), // Data of added node, name of node Id of parent.
+    /// Data for added node, name, id, parent-id
+    NodeAdded(Data, Option<String>, Uuid, Uuid),
     NodeRemoved(Uuid),
     NodeChangedName(Uuid, String),
     NodeChangedData(Uuid, Data),

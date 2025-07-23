@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use server::server_interface::ServerInterface;
 use shared::{
     datatypes::{Data, nodes::Node},
     events::DataChanged,
@@ -10,15 +11,13 @@ extern crate server;
 extern crate shared;
 
 fn main() {
-    let num = Rc::new(42);
     let mut server = server::Server::new();
 
-    server.add_child(Node::new().name("Hello"));
+    server.add_child(Node::new().name("Hello")).unwrap();
     let mut n = Node::new();
 
-    let num2 = num.clone();
-    n.subscribe_to_children(DataChanged::new(move |_, _| {
-        println!("Hello {num2}");
+    n.subscribe_to_children(DataChanged::new(move |old, new| {
+        println!("Hello {}, {}", old.data, new);
     }));
     n.change_data(Data::UInt32(32));
 }

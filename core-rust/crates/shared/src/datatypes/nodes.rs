@@ -158,6 +158,7 @@ impl Node {
     }
 
     /// Traverses the tree to find a node with the given id.
+    /// Returns mutable ref
     pub fn find_node_mut(&mut self, id: &Uuid) -> Option<&mut Node> {
         if self.id == *id {
             return Some(self);
@@ -166,6 +167,24 @@ impl Node {
         if let Some(children) = &mut self.children {
             for child in children {
                 if let Some(node) = child.find_node_mut(id) {
+                    return Some(node);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Traverses the tree to find a node with the given id.
+    /// Returns immutable ref
+    pub fn find_node(&self, id: &Uuid) -> Option<&Node> {
+        if self.id == *id {
+            return Some(self);
+        }
+
+        if let Some(children) = &self.children {
+            for child in children {
+                if let Some(node) = child.find_node(id) {
                     return Some(node);
                 }
             }

@@ -7,7 +7,7 @@ pub enum Error {
 }
 
 impl Error {
-    // turns an error into our errors
+    /// Takes any Result and turns into [shared::errors:Error]. Makes using ? very easy.
     pub fn from<E, M>(err: Result<M, E>) -> Result<M, Error>
     where
         E: fmt::Debug,

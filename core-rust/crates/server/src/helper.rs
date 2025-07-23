@@ -4,8 +4,8 @@ use shared::errors::Error;
 use crate::internal_message::InternalMessage;
 
 pub(crate) struct ServerHelper {
-    to_handler_s: Sender<InternalMessage>,
-    from_handler_r: Receiver<InternalMessage>,
+    pub to_handler_s: Sender<InternalMessage>,
+    pub from_handler_r: Receiver<InternalMessage>,
     to_handler_from_clients_s: Sender<InternalMessage>,
     client_id: u64, // starts at 0 and is increased for each new client.
 }
@@ -20,7 +20,7 @@ impl ServerHelper {
             to_handler_s,
             from_handler_r,
             to_handler_from_clients_s,
-            client_id: 0,
+            client_id: 1, // 0 is reserved for the hosting server.
         }
     }
 
